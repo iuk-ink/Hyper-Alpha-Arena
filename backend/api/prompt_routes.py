@@ -11,10 +11,12 @@ from database.models import PromptTemplate, Account
 from schemas.prompt import (
     PromptListResponse,
     PromptTemplateUpdateRequest,
-    PromptTemplateRestoreRequest,
     PromptTemplateResponse,
     PromptBindingUpsertRequest,
     PromptBindingResponse,
+    PromptTemplateCopyRequest,
+    PromptTemplateCreateRequest,
+    PromptTemplateNameUpdateRequest,
 )
 
 
@@ -80,20 +82,81 @@ def update_prompt_template(
     return PromptTemplateResponse.from_orm(template)
 
 
+# Restore endpoint removed - dangerous operation that overwrites user customizations
+
+
+@router.post("", response_model=PromptTemplateResponse, response_model_exclude_none=True)
+@router.post("/", response_model=PromptTemplateResponse, response_model_exclude_none=True)
+def create_prompt_template(
+    payload: PromptTemplateCreateRequest,
+    db: Session = Depends(get_db),
+) -> PromptTemplateResponse:
+    """Create a new user-defined prompt template"""
+    try:
+        template = prompt_repo.create_user_template(
+            db,
+            name=payload.name,
+            description=payload.description,
+            template_text=payload.template_text,
+            created_by=payload.created_by,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return PromptTemplateResponse.from_orm(template)
+
+
 @router.post(
-    "/{key}/restore",
+    "/{template_id}/copy",
     response_model=PromptTemplateResponse,
     response_model_exclude_none=True,
 )
-def restore_prompt_template(
-    key: str,
-    payload: PromptTemplateRestoreRequest,
+def copy_prompt_template(
+    template_id: int,
+    payload: PromptTemplateCopyRequest,
     db: Session = Depends(get_db),
 ) -> PromptTemplateResponse:
+    """Copy an existing template to create a new one"""
     try:
-        template = prompt_repo.restore_template(
+        template = prompt_repo.copy_template(
             db,
-            key=key,
+            template_id=template_id,
+            new_name=payload.new_name,
+            created_by=payload.created_by,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return PromptTemplateResponse.from_orm(template)
+
+
+@router.delete("/{template_id}")
+def delete_prompt_template(template_id: int, db: Session = Depends(get_db)) -> dict:
+    """Soft delete a prompt template"""
+    try:
+        prompt_repo.soft_delete_template(db, template_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"message": "Template deleted"}
+
+
+@router.patch(
+    "/{template_id}/name",
+    response_model=PromptTemplateResponse,
+    response_model_exclude_none=True,
+)
+def update_prompt_template_name(
+    template_id: int,
+    payload: PromptTemplateNameUpdateRequest,
+    db: Session = Depends(get_db),
+) -> PromptTemplateResponse:
+    """Update template name and description"""
+    try:
+        template = prompt_repo.update_template_name(
+            db,
+            template_id=template_id,
+            name=payload.name,
+            description=payload.description,
             updated_by=payload.updated_by,
         )
     except ValueError as exc:

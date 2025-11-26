@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 # List of migration scripts in execution order
 MIGRATIONS = [
-    "add_environment_to_crypto_klines.py"
+    "add_environment_to_crypto_klines.py",
+    "add_prompt_template_fields.py",
 ]
 
 def check_migration_table():

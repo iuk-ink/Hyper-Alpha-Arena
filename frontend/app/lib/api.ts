@@ -200,7 +200,11 @@ export interface PromptTemplate {
   description?: string | null
   templateText: string
   systemTemplateText: string
+  isSystem: string
+  isDeleted: string
+  createdBy: string
   updatedBy?: string | null
+  createdAt?: string | null
   updatedAt?: string | null
 }
 
@@ -223,6 +227,24 @@ export interface PromptListResponse {
 
 export interface PromptTemplateUpdateRequest {
   templateText: string
+  description?: string
+  updatedBy?: string
+}
+
+export interface PromptTemplateCreateRequest {
+  name: string
+  description?: string
+  templateText?: string
+  createdBy?: string
+}
+
+export interface PromptTemplateCopyRequest {
+  newName?: string
+  createdBy?: string
+}
+
+export interface PromptTemplateNameUpdateRequest {
+  name: string
   description?: string
   updatedBy?: string
 }
@@ -250,14 +272,40 @@ export async function updatePromptTemplate(
   return response.json()
 }
 
-export async function restorePromptTemplate(
-  key: string,
-  updatedBy?: string,
+export async function createPromptTemplate(
+  payload: PromptTemplateCreateRequest,
 ): Promise<PromptTemplate> {
-  const body = updatedBy ? { updatedBy } : {}
-  const response = await apiRequest(`/prompts/${encodeURIComponent(key)}/restore`, {
+  const response = await apiRequest('/prompts', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
+  })
+  return response.json()
+}
+
+export async function copyPromptTemplate(
+  templateId: number,
+  payload: PromptTemplateCopyRequest,
+): Promise<PromptTemplate> {
+  const response = await apiRequest(`/prompts/${templateId}/copy`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return response.json()
+}
+
+export async function deletePromptTemplate(templateId: number): Promise<void> {
+  await apiRequest(`/prompts/${templateId}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function updatePromptTemplateName(
+  templateId: number,
+  payload: PromptTemplateNameUpdateRequest,
+): Promise<PromptTemplate> {
+  const response = await apiRequest(`/prompts/${templateId}/name`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
   })
   return response.json()
 }
