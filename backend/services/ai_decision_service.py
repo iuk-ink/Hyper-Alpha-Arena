@@ -1671,7 +1671,8 @@ def _parse_kline_indicator_variables(template_text: str) -> Dict[str, Dict[str, 
     kline_pattern = r'\{([A-Z]+)_klines_(\w+)\}(?:\((\d+)\))?'
 
     # Pattern for indicator variables: {SYMBOL_INDICATOR_PERIOD}
-    indicator_pattern = r'\{([A-Z]+)_(RSI\d+|MACD|MA\d*|EMA\d*|BOLL|ATR\d+)_(\w+)\}'
+    # Supports: RSI14, RSI7, MACD, STOCH, MA, EMA, BOLL, ATR14, VWAP, OBV
+    indicator_pattern = r'\{([A-Z]+)_(RSI\d+|MACD|STOCH|MA\d*|EMA\d*|BOLL|ATR\d+|VWAP|OBV)_(\w+)\}'
     
     # Pattern for market data: {SYMBOL_market_data}
     market_data_pattern = r'\{([A-Z]+)_market_data\}'
@@ -1839,6 +1840,70 @@ def _format_single_indicator(indicator_name: str, indicator_data: Any) -> str:
             result = [
                 f"{indicator_name}: {current:.2f} ({volatility})",
                 f"20-period average: {avg_atr:.2f}"
+            ]
+            return "\n".join(result)
+
+        elif indicator_name == 'STOCH':
+            # Stochastic Oscillator format: %K and %D lines + interpretation
+            k_line = indicator_data.get('k', [])
+            d_line = indicator_data.get('d', [])
+
+            if not k_line or not d_line:
+                return "N/A"
+
+            current_k = k_line[-1]
+            current_d = d_line[-1]
+            last_5_k = k_line[-5:] if len(k_line) >= 5 else k_line
+
+            # Interpret Stochastic
+            if current_k > 80:
+                interpretation = "Overbought"
+            elif current_k < 20:
+                interpretation = "Oversold"
+            else:
+                interpretation = "Neutral"
+
+            result = [
+                f"%K Line: {current_k:.2f} ({interpretation})",
+                f"%D Line: {current_d:.2f}",
+                f"%K last 5: {', '.join(f'{v:.2f}' for v in last_5_k)}"
+            ]
+            return "\n".join(result)
+
+        elif indicator_name == 'VWAP':
+            # VWAP format: current value + comparison with price
+            values = indicator_data if isinstance(indicator_data, list) else []
+            if not values:
+                return "N/A"
+
+            current = values[-1]
+            last_5 = values[-5:] if len(values) >= 5 else values
+
+            result = [
+                f"VWAP: {current:.2f}",
+                f"VWAP last 5: {', '.join(f'{v:.2f}' for v in last_5)}",
+                f"Note: Price above VWAP suggests bullish sentiment, below suggests bearish"
+            ]
+            return "\n".join(result)
+
+        elif indicator_name == 'OBV':
+            # OBV format: current value + trend
+            values = indicator_data if isinstance(indicator_data, list) else []
+            if not values:
+                return "N/A"
+
+            current = values[-1]
+            last_5 = values[-5:] if len(values) >= 5 else values
+
+            # Determine trend
+            if len(values) >= 2:
+                trend = "Rising" if current > values[-2] else "Falling"
+            else:
+                trend = "N/A"
+
+            result = [
+                f"OBV: {current:.0f} ({trend})",
+                f"OBV last 5: {', '.join(f'{v:.0f}' for v in last_5)}"
             ]
             return "\n".join(result)
 

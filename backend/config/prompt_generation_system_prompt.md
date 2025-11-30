@@ -71,12 +71,24 @@ Format: `{SYMBOL_INDICATOR_PERIOD}`
 **CRITICAL**: The period MUST match the K-line period you're using
 
 Available indicators:
-- `{BTC_RSI14_15m}` - RSI(14) indicator for BTC on 15-minute chart
-- `{BTC_MACD_15m}` - MACD indicator (MACD line, signal line, histogram)
-- `{BTC_MA_15m}` - Simple Moving Averages (MA5, MA10, MA20, MA30, MA60)
-- `{BTC_EMA_15m}` - Exponential Moving Averages (EMA20, EMA50, EMA100)
-- `{BTC_BOLL_15m}` - Bollinger Bands (upper, middle, lower bands)
-- `{BTC_ATR14_15m}` - Average True Range(14) for volatility measurement
+
+**Trend Indicators:**
+- `{BTC_MA_15m}` - Simple Moving Averages (MA5, MA10, MA20) for trend identification
+- `{BTC_EMA_15m}` - Exponential Moving Averages (EMA20, EMA50, EMA100) for responsive trend tracking
+
+**Momentum Indicators:**
+- `{BTC_RSI14_15m}` - RSI(14) indicator for overbought/oversold conditions
+- `{BTC_RSI7_15m}` - RSI(7) indicator for faster momentum signals
+- `{BTC_MACD_15m}` - MACD indicator (MACD line, signal line, histogram) for trend momentum
+- `{BTC_STOCH_15m}` - Stochastic Oscillator (%K and %D lines) for momentum and reversal signals
+
+**Volatility Indicators:**
+- `{BTC_BOLL_15m}` - Bollinger Bands (upper, middle, lower bands) for volatility and price extremes
+- `{BTC_ATR14_15m}` - Average True Range(14) for volatility measurement and stop loss placement
+
+**Volume Indicators:**
+- `{BTC_VWAP_15m}` - Volume Weighted Average Price for institutional trading levels
+- `{BTC_OBV_15m}` - On-Balance Volume for volume trend confirmation
 
 ### Position & Account Variables
 - `{positions_detail}` - Detailed information about all current open positions
@@ -534,14 +546,17 @@ Does this match your expectations? Or would you like to adjust any of these assu
 
 ## Variable Selection Best Practices
 
-- **Day Trading (1m-15m)**: Use shorter K-line periods, focus on RSI, MACD, Bollinger Bands
-- **Swing Trading (1h-4h)**: Use medium K-line periods, add MA/EMA crossovers
-- **Position Trading (1d+)**: Use daily/weekly K-lines, focus on major trend indicators
+### By Trading Style
+- **Day Trading (1m-15m)**: Use shorter K-line periods, focus on RSI7, RSI14, STOCH, MACD, Bollinger Bands, VWAP
+- **Swing Trading (1h-4h)**: Use medium K-line periods, add MA/EMA crossovers, VWAP for entry/exit levels
+- **Position Trading (1d+)**: Use daily/weekly K-lines, focus on major trend indicators (EMA50, EMA100, MACD)
 
-- **Trend Strategies**: MA, EMA, MACD
-- **Mean Reversion**: RSI, Bollinger Bands, oversold/overbought levels
-- **Breakout**: ATR for volatility, volume, key support/resistance levels
-- **Multi-factor**: Combine 3-4 indicators from different categories
+### By Strategy Type
+- **Trend Strategies**: MA, EMA (especially EMA20, EMA50, EMA100), MACD for trend confirmation
+- **Mean Reversion**: RSI14, RSI7, STOCH, Bollinger Bands for oversold/overbought levels
+- **Breakout**: ATR14 for volatility measurement, BOLL for breakout levels, OBV for volume confirmation
+- **Volume-Based**: VWAP for institutional levels, OBV for trend confirmation
+- **Multi-factor**: Combine 3-4 indicators from different categories (e.g., EMA + RSI + VWAP + ATR)
 
 ## Remember
 
