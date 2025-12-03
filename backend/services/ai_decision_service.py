@@ -1178,16 +1178,20 @@ def call_ai_for_decision(
             )
             return None
 
-        # Retry logic for rate limiting
-        max_retries = 3
+        # Retry logic for rate limiting and high-load scenarios
+        # DeepSeek API: During high load, server keeps connection alive and returns empty lines
+        # Intermediate components (CloudFront/ELB) may timeout at ~30s, causing ChunkedEncodingError
+        # Solution: Increase retries and timeout to handle DeepSeek's high-load behavior
+        max_retries = 5  # Increased from 3 to 5 for better resilience
         response = None
         success = False
 
         # Reasoning models need longer timeout (they think more, respond slower)
+        # DeepSeek models need extra timeout to handle high-load scenarios (empty line responses)
         # For unknown models (not in our hardcoded list), use conservative longer timeout
         # Better to wait longer than to fail due to timeout
         if is_reasoning_model:
-            request_timeout = 240  # Known reasoning models (increased for slow reasoning models)
+            request_timeout = 300  # Increased from 240s to 300s for DeepSeek high-load handling
         else:
             # Unknown models: use 120s as conservative default
             # This handles custom model names, future models, and proxy services
@@ -1239,7 +1243,11 @@ def call_ai_for_decision(
                     break  # Try next endpoint if available
                 except requests.RequestException as req_err:
                     if attempt < max_retries - 1:
-                        wait_time = (2**attempt) + random.uniform(0, 1)
+                        # Enhanced backoff for DeepSeek high-load scenarios
+                        # Give server more time to recover between retries
+                        # Formula: 5 + 2^attempt + random jitter
+                        # Results: 6-7s, 7-8s, 9-10s, 13-14s, 21-22s
+                        wait_time = 5 + (2**attempt) + random.uniform(0, 1)
                         logger.warning(
                             "AI API request failed for endpoint %s (attempt %s/%s), retrying in %.1fs: %s",
                             endpoint,
